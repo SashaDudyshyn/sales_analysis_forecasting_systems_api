@@ -183,6 +183,6 @@ def create_sheet_seasonality(workbook, params, smoothed_data):
 
     # === ПОВЕРТАЄМО ДЕСЕЗОНАЛІЗОВАНІ ДАНІ ДЛЯ ПРОГНОЗУ ===
     return {
-        "deseasoned_data": deseasoned_data,        # ← ГОЛОВНЕ!
-        "seasonal_coeffs": normalized,             # ← на майбутнє (графіки, пояснення)
+        "deseasoned_data": deseasoned_data,
+        "seasonal_coeffs": normalized,
     }

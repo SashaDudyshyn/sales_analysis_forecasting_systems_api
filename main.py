@@ -4,7 +4,6 @@ from fastapi.responses import StreamingResponse
 from openpyxl import load_workbook
 from openpyxl.utils import column_index_from_string, get_column_letter
 from io import BytesIO
-from typing import Optional
 
 from models.excel_params import ExcelProcessParams
 from sheets.start_parameters import create_sheet_start_parameters
@@ -12,6 +11,7 @@ from sheets.smoothed_data import create_sheet_smoothed_data
 from sheets.seasonality import create_sheet_seasonality
 from sheets.forecast import create_sheet_forecast
 from sheets.factors_loader import load_factors_data
+from sheets.final_forecast import create_sheet_final_forecast
 
 app = FastAPI(title="Прогноз продажів")
 
@@ -145,17 +145,26 @@ async def process_excel(
     # === 4. Виключення сезонності ===
     create_sheet_seasonality(workbook, final_params, smoothed_result["smoothed_data"])
     seasonality_result = create_sheet_seasonality(workbook, final_params, smoothed_result["smoothed_data"])
-    final_params["deseasoned_data"] = seasonality_result["deseasoned_data"]
+    final_params.update({
+        "deseasoned_data": seasonality_result["deseasoned_data"],
+        "seasonal_coeffs": seasonality_result["seasonal_coeffs"],
+    })
 
-    # === 5. Модель ===
+
+    # === 5. Тренд ===
     create_sheet_forecast(workbook, final_params, seasonality_result["deseasoned_data"])
 
-    # === 5. Завантаження факторів впливу ===
+    # === 6. Завантаження факторів впливу ===
     try:
         factors_data = load_factors_data(workbook, params_dict)
         final_params["factors_data"] = factors_data
     except Exception as e:
         raise HTTPException(500, f"Помилка читання факторів впливу: {e}")
+
+    # === 7. Фінальний прогноз ===
+    forecast_result = create_sheet_forecast(workbook, final_params, seasonality_result["deseasoned_data"])
+    final_params["trend_forecasts"] = forecast_result["trend_forecasts"]
+    create_sheet_final_forecast(workbook, final_params)
 
     # === Повертаємо готовий файл ===
     output = BytesIO()

@@ -8,7 +8,7 @@ MONTH_NAMES = ["", "січень", "лютий", "березень", "квіте
 
 
 def create_sheet_forecast(workbook, params, deseasoned_data: dict):
-    sheet_name = "Прогноз"
+    sheet_name = "Тренд"
     if sheet_name in workbook.sheetnames:
         workbook.remove(workbook[sheet_name])
     ws = workbook.create_sheet(title=sheet_name)
@@ -156,3 +156,15 @@ def create_sheet_forecast(workbook, params, deseasoned_data: dict):
     for row in ws.iter_rows(min_row=4, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
         for cell in row:
             cell.border = border
+
+    # Повертаємо прогноз тренду та коефіцієнти для подальшого використання
+    forecast_by_col = {}
+    coeffs_by_col = {}
+    for col_idx, t in trends.items():
+        forecast_by_col[col_idx] = t["forecast"]
+        coeffs_by_col[col_idx] = {"A": t["A"], "B": t["B"]}
+
+    return {
+        "trend_forecasts": forecast_by_col,      # 12 значень на кожен регіон
+        "trend_coeffs": coeffs_by_col,           # A і B (на майбутнє)
+    }
