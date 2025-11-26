@@ -13,7 +13,9 @@ def create_sheet_start_parameters(workbook, params):
     data = [
         ["Параметр", "Значення"],
         ["Файл", params["filename"]],
-        ["Активний аркуш", params["active_sheet_name"]],
+        ["Назва аркуша зі статистикою", params["sheet_stat"]],
+        ["Назва аркуша з факторами", params["sheet_factor"]],
+        ["Рік прогнозування прогнозу", params["model_year"]],
         ["", ""],
         ["column_year (рік)", params["column_year"]],
         ["column_month (місяць)", params["column_month"]],
@@ -22,6 +24,17 @@ def create_sheet_start_parameters(workbook, params):
         ["row_first_data", params["row_first_data"]],
         ["row_last_data", params["row_last_data"]],
         ["k (згладжування)", params["k"]],
+        ["", ""],
+        ["Налаштування факторів впливу", ""],
+        ["", ""],
+        ["Колонка року факторів", params["factor_column_year"]],
+        ["Колонка місяця факторів", params["factor_column_month"]],
+        ["Діапазон даних факторів", params["factor_row_range_data"]],
+        ["Рядок опису факторів", params["factor_row_description"]],
+        ["Рядок типу факторів", params["factor_row_type"]],
+        ["Рядок заголовків факторів", params["factor_row_title"]],
+        ["Перший рядок даних факторів", params["factor_row_first_data"]],
+        ["Останній рядок даних факторів", params["factor_row_last_data"]],
     ]
 
     for row in data:
