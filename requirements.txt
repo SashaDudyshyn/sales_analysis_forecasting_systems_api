@@ -1,6 +1,8 @@
-fastapi
+fastapi~=0.121.2
 uvicorn
-openpyxl
+openpyxl~=3.1.5
 python-multipart
 pydantic>=2.0
-numpy
+numpy~=2.3.4
+xlsxwriter
+pandas~=2.3.3

@@ -137,4 +137,40 @@ def create_sheet_final_forecast(workbook, params):
         for cell in row:
             cell.border = border
 
-    return ws
+    # === ЗБИРАЄМО ФІНАЛЬНИЙ ПРОГНОЗ ДЛЯ КОЖНОГО НАБОРУ ДАНИХ ===
+    final_forecast_by_col = {}  # ← це те, що нам потрібно для візуалізації
+
+    # Пробігаємо ще раз по місяцях, щоб зібрати фінальні значення в словник
+    for month_num in range(1, 13):
+        row_values_for_month = []  # тимчасовий список для поточного місяця
+
+        for idx, header in enumerate(headers):
+            col_idx = params["range_start_col"] + idx
+
+            trend_val = trend_forecasts.get(col_idx, [0]*12)[month_num-1] or 0.0
+            coeff = seasonal_coeffs.get((month_num, col_idx), 1.0)
+            seasonal_val = round(trend_val * coeff, 2)
+
+            final_val = seasonal_val
+            for f in factors_by_header.get(header, []):
+                val = f["values"][month_num-1]
+                if val is not None:
+                    if f["type"] == "коефіцієнт":
+                        final_val = round(final_val * val, 2)
+                    else:
+                        final_val = round(final_val + val, 2)
+
+            row_values_for_month.append(final_val)
+
+        # Записуємо в словник по місяцях
+        for idx, val in enumerate(row_values_for_month):
+            col_idx = params["range_start_col"] + idx
+            if col_idx not in final_forecast_by_col:
+                final_forecast_by_col[col_idx] = []
+            final_forecast_by_col[col_idx].append(val)
+
+    # === ПОВЕРТАЄМО РЕЗУЛЬТАТ ===
+    return {
+        "final_forecast_by_col": final_forecast_by_col   # {col_idx: [12 значень]}
+        # "ws": ws — не обов'язково повертати, бо аркуш вже в workbook
+    }

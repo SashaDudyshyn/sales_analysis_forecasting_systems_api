@@ -12,6 +12,7 @@ from sheets.seasonality import create_sheet_seasonality
 from sheets.forecast import create_sheet_forecast
 from sheets.factors_loader import load_factors_data
 from sheets.final_forecast import create_sheet_final_forecast
+from sheets.visualization import create_sheet_visualization
 
 app = FastAPI(title="Прогноз продажів")
 
@@ -164,7 +165,76 @@ async def process_excel(
     # === 7. Фінальний прогноз ===
     forecast_result = create_sheet_forecast(workbook, final_params, seasonality_result["deseasoned_data"])
     final_params["trend_forecasts"] = forecast_result["trend_forecasts"]
-    create_sheet_final_forecast(workbook, final_params)
+
+    final_result = create_sheet_final_forecast(workbook, final_params)
+    final_forecast_by_col = final_result["final_forecast_by_col"]
+
+    # === ЗБИРАЄМО ВСІ ДАНІ ДЛЯ ВІЗУАЛІЗАЦІЇ (все зі словників, НЕ з Pydantic!) ===
+
+    # 1. Роки та місяці
+    years_list = []
+    months_list = []
+
+    year_col = column_index_from_string(params_dict["column_year"])
+    month_col = column_index_from_string(params_dict["column_month"])
+
+    for row in stat_sheet.iter_rows(
+            min_row=params_dict["row_first_data"],
+            max_row=params_dict["row_last_data"],
+            min_col=year_col,
+            max_col=month_col,
+            values_only=True
+    ):
+        if len(row) >= 2 and row[0] is not None and row[1] is not None:
+            try:
+                years_list.append(int(row[0]))
+                months_list.append(int(row[1]))
+            except (ValueError, TypeError):
+                continue
+
+    # 2. Сирі дані
+    raw_data_dict = {}
+    start_col = column_index_from_string(params_dict["range_data"].split("-")[0])
+    end_col = column_index_from_string(params_dict["range_data"].split("-")[1])
+
+    for col_idx in range(start_col, end_col + 1):
+        col_values = []
+        for cell in stat_sheet.iter_rows(
+                min_row=params_dict["row_first_data"],
+                max_row=params_dict["row_last_data"],
+                min_col=col_idx,
+                max_col=col_idx,
+                values_only=True
+        ):
+            val = cell[0]
+            try:
+                col_values.append(float(val)) if val is not None else col_values.append(None)
+            except (ValueError, TypeError):
+                col_values.append(None)
+        raw_data_dict[col_idx] = col_values
+
+    # 3. Назви регіонів (input_headers) — беремо з params_dict!
+    input_headers = params_dict.get("input_headers", [])
+
+    # === ПАРАМЕТРИ ДЛЯ ВІЗУАЛІЗАЦІЇ — ТІЛЬКИ СЛОВНИК! ===
+    viz_params = {
+        "model_year": model_year,
+        "input_headers": input_headers,  # ← з params_dict!
+        "range_start_col": start_col,
+
+        "years": years_list,
+        "months": months_list,
+
+        "raw_data": raw_data_dict,
+        "smoothed_data": smoothed_result["smoothed_data"],
+        "deseasoned_data": seasonality_result["deseasoned_data"],
+        "trend_forecasts": forecast_result["trend_forecasts"],
+        "final_forecast": final_forecast_by_col,
+    }
+
+    # === СТВОРЮЄМО ВКЛАДКУ З ГРАФІКОМ ===
+    create_sheet_visualization(workbook, viz_params)
+
 
     # === Повертаємо готовий файл ===
     output = BytesIO()
