@@ -1,6 +1,5 @@
 # sheets/seasonality.py
 from openpyxl.styles import Font, Alignment, PatternFill
-from openpyxl.utils import get_column_letter
 from collections import defaultdict
 import numpy as np
 
@@ -17,7 +16,6 @@ def create_sheet_seasonality(workbook, params, smoothed_data):
     ws = workbook.create_sheet(title=sheet_name)
 
     # === Параметри ===
-    active_sheet = params["active_sheet"]           # ← ВАЖЛИВО: правильний аркуш!
     col_start = params["range_start_col"]
     col_end = params["range_end_col"]
     input_headers = params.get("input_headers", [])
@@ -88,7 +86,7 @@ def create_sheet_seasonality(workbook, params, smoothed_data):
                 deseasoned_data[c] = []
             deseasoned_data[c].append(deseasoned_by_row[i][c])
 
-    # === Позиції колонок (залишаємо як було) ===
+    # === Позиції колонок ===
     smoothed_start = 5
     unnorm_month_start = smoothed_start + data_cols + 2
     unnorm_coeff_start = unnorm_month_start + 1

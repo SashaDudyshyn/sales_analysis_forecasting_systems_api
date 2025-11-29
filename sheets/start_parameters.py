@@ -1,7 +1,5 @@
 # sheets/start_parameters.py
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
-from openpyxl.utils import get_column_letter
-
 
 def create_sheet_start_parameters(workbook, params):
     sheet_name = "Початкові налаштування"
@@ -75,7 +73,7 @@ def create_sheet_start_parameters(workbook, params):
         if cell_a.value and "Налаштування" in str(cell_a.value):
             # Спочатку очищаємо B-клітинку (щоб не було конфлікту)
             ws.cell(row_idx, 2).value = None
-            # Тепер безпечно об'єднуємо
+            # Тепер об'єднуємо
             ws.merge_cells(start_row=row_idx, start_column=1,
                            end_row=row_idx, end_column=2)
             cell_a.font = bold_blue

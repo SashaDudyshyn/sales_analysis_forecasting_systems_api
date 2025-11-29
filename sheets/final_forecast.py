@@ -44,7 +44,7 @@ def create_sheet_final_forecast(workbook, params):
 
     total_cols = len(header_row)
 
-    # === Головний заголовок — ТІЛЬКИ ОДИН РАЗ! ===
+    # === Головний заголовок  ===
     ws.cell(1, 1, f"Фінальний прогноз на {model_year} рік")
     if total_cols > 1:
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=total_cols)
@@ -83,7 +83,7 @@ def create_sheet_final_forecast(workbook, params):
 
         ws.append(row)
 
-    # === СТИЛІЗАЦІЯ (після всіх даних!) ===
+    # === СТИЛІЗАЦІЯ ===
     bold = Font(bold=True)
     center = Alignment(horizontal="center", vertical="center")
     wrap_center = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -138,7 +138,7 @@ def create_sheet_final_forecast(workbook, params):
             cell.border = border
 
     # === ЗБИРАЄМО ФІНАЛЬНИЙ ПРОГНОЗ ДЛЯ КОЖНОГО НАБОРУ ДАНИХ ===
-    final_forecast_by_col = {}  # ← це те, що нам потрібно для візуалізації
+    final_forecast_by_col = {}  # ← потрібно для візуалізації
 
     # Пробігаємо ще раз по місяцях, щоб зібрати фінальні значення в словник
     for month_num in range(1, 13):
@@ -172,5 +172,4 @@ def create_sheet_final_forecast(workbook, params):
     # === ПОВЕРТАЄМО РЕЗУЛЬТАТ ===
     return {
         "final_forecast_by_col": final_forecast_by_col   # {col_idx: [12 значень]}
-        # "ws": ws — не обов'язково повертати, бо аркуш вже в workbook
     }

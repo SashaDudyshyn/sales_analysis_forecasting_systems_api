@@ -1,6 +1,5 @@
 # sheets/smoothed_data.py
 from openpyxl.styles import Font, Alignment, PatternFill
-from openpyxl.utils import get_column_letter
 
 MONTH_NAMES = [
     "", "січень", "лютий", "березень", "квітень", "травень", "червень",
@@ -19,7 +18,7 @@ def create_sheet_smoothed_data(workbook, params):
     col_end = params["range_end_col"]
     row_first = params["row_first_data"]
     row_last = params["row_last_data"]
-    k = params.get("k", 2)  # ← тепер реально використовується!
+    k = params.get("k", 2)
 
     input_headers = params["input_headers"]
     data_cols = len(input_headers)
@@ -159,6 +158,7 @@ def create_sheet_smoothed_data(workbook, params):
 
     # Повертаємо дані для наступних кроків
     return {
+        "raw_data": raw_data,
         "smoothed_data": smoothed,
         "years": years,
         "months": months,

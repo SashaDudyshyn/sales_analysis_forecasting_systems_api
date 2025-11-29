@@ -4,105 +4,119 @@ from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, Alignment, PatternFill
 
 
-def create_sheet_visualization(workbook, params):
+def create_combined_visualization_from_columns(
+    workbook,
+    years,
+    months,
+    raw_data_dict,
+    smoothed_dict,
+    deseasoned_dict,
+    forecast_dict,
+    column_headers,
+    model_year
+):
     sheet_name = "Візуалізація"
     if sheet_name in workbook.sheetnames:
         workbook.remove(workbook[sheet_name])
     ws = workbook.create_sheet(title=sheet_name)
 
-    model_year = params["model_year"]
-    first_header = params["input_headers"][0] if params["input_headers"] else "Дані"
+    current_row = 1
 
-    years = params["years"]
-    months = params["months"]
-    raw = params["raw_data"].get(params["range_start_col"], [])
-    smooth = params["smoothed_data"].get(params["range_start_col"], [])
-    deseas = params["deseasoned_data"].get(params["range_start_col"], [])
-    final_fc = params["final_forecast"].get(params["range_start_col"], [])
+    # Отримуємо правильний порядок колонок: ключі з raw_data_dict (7,8,9,10)
+    data_columns = sorted(raw_data_dict.keys())  # [7, 8, 9, 10]
 
-    n_hist = max(len(years), len(months), len(raw), len(smooth), len(deseas), 1)
+    for col_idx in data_columns:
+        # Знаходимо індекс у списку заголовків (0,1,2,3)
+        header_index = data_columns.index(col_idx)
+        header_name = column_headers[header_index]
 
-    def g(lst, i, default=None):
-        return lst[i] if i < len(lst) else default
+        raw = raw_data_dict[col_idx]
+        smooth = smoothed_dict.get(col_idx, [])
+        deseas = deseasoned_dict.get(col_idx, [])
+        final_fc = forecast_dict.get(col_idx, [])
 
-    # Заголовок
-    ws.merge_cells("A1:E1")
-    ws["A1"] = f"Динаміка та прогноз: {first_header}"
-    ws["A1"].font = Font(bold=True, size=16, color="1F4E79")
-    ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
-    ws.row_dimensions[1].height = 45
+        n_hist = len(years)
 
-    # Заголовки таблиці
-    headers = ["Період", "Сирі дані", "Згладжені", "Тренд", "Фінальний прогноз"]
-    for c, h in enumerate(headers, 1):
-        cell = ws.cell(3, c, h)
-        cell.font = Font(bold=True, color="FFFFFF")
-        cell.fill = PatternFill("solid", fgColor="1F4E79")
-        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        # === Заголовок ===
+        ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=5)
+        title_cell = ws.cell(current_row, 1, f"Динаміка та прогноз: {header_name}")
+        title_cell.font = Font(bold=True, size=16, color="1F4E79")
+        title_cell.alignment = Alignment(horizontal="center", vertical="center")
+        ws.row_dimensions[current_row].height = 45
+        current_row += 1
 
-    # Дані
-    for i in range(n_hist):
-        y = int(g(years, i) or 2000)
-        m = int(g(months, i) or 1)
-        ws.append([f"{y}-{m:02d}", g(raw, i), g(smooth, i), g(deseas, i), None])
+        # === Заголовки таблиці ===
+        headers = ["Період", "Сирі дані", "Згладжені", "Тренд", "Фінальний прогноз"]
+        for c, h in enumerate(headers, 1):
+            cell = ws.cell(current_row, c, h)
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill("solid", fgColor="1F4E79")
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        current_row += 1
 
-    for m in range(1, 13):
-        ws.append([f"{model_year}-{m:02d}", None, None, None, final_fc[m-1] if m-1 < len(final_fc) else None])
+        # === Дані ===
+        data_start_row = current_row
+        for i in range(n_hist):
+            period = f"{int(years[i])}-{int(months[i]):02d}"
+            ws.append([
+                period,
+                raw[i] if i < len(raw) else None,
+                smooth[i] if i < len(smooth) else None,
+                deseas[i] if i < len(deseas) else None,
+                None
+            ])
 
-    # === АВТОШИРИНА: розумна, тільки по вмісту даних ===
-    for col_idx in range(1, 6):
-        column = get_column_letter(col_idx)
-        max_length = 0
+        for m in range(1, 13):
+            fc_val = final_fc[m-1] if m-1 < len(final_fc) else None
+            ws.append([f"{model_year}-{m:02d}", None, None, None, fc_val])
 
-        for cell in ws[column]:
-            if cell.row < 4:  # пропускаємо заголовок і рядок з назвами колонок
-                continue
-            if cell.value is not None:
-                # Для чисел — рахуємо кількість символів у відформатованому вигляді
-                if isinstance(cell.value, (int, float)):
-                    val_str = f"{cell.value:,.0f}".replace(",", " ")  # 1234567 → "1 234 567"
-                else:
-                    val_str = str(cell.value)
-                max_length = max(max_length, len(val_str))
+        data_end_row = ws.max_row
 
-        # Додаємо невеликий відступ
-        adjusted_width = max_length + 2
-        # Але не менше мінімальної ширини для зручності
-        adjusted_width = max(adjusted_width, 10)
-        # І не більше розумного максимуму
-        adjusted_width = min(adjusted_width, 25)
+        # === Автоширина ===
+        for col in range(1, 6):
+            column = get_column_letter(col)
+            max_len = 0
+            for r in range(data_start_row, data_end_row + 1):
+                val = ws.cell(r, col).value
+                if val is not None:
+                    val_str = f"{val:,.0f}".replace(",", " ") if isinstance(val, (int, float)) else str(val)
+                    max_len = max(max_len, len(val_str))
+            width = max(min(max_len + 2, 25), 10)
+            ws.column_dimensions[column].width = width
 
-        ws.column_dimensions[column].width = adjusted_width
+        # === Графік ===
+        chart = LineChart()
+        chart.title = f"Прогноз: {header_name}"
+        chart.style = 27
+        chart.height = 18
+        chart.width = 34
+        chart.x_axis.title = "Період"
+        chart.y_axis.title = "Обсяг"
+        chart.legend.position = "b"
 
-    # Висота рядка з заголовками колонок — автоматична (бо wrap_text=True)
-    ws.row_dimensions[3].height = None
+        data_ref = Reference(ws, min_col=2, max_col=5, min_row=current_row-1, max_row=data_end_row)
+        cats_ref = Reference(ws, min_col=1, min_row=data_start_row, max_row=data_end_row)
+        chart.add_data(data_ref, titles_from_data=True)
+        chart.set_categories(cats_ref)
 
-    # Графік
-    chart = LineChart()
-    chart.title = f"Прогноз продажів: {first_header}"
-    chart.style = 27
-    chart.height = 20
-    chart.width = 34
-    chart.x_axis.title = "Період"
-    chart.y_axis.title = "Обсяг"
-    chart.legend.position = "b"
+        colors = ["1F4E79", "ED7D31", "A5A5A5", "70AD47"]
+        for i, s in enumerate(chart.series):
+            s.graphicalProperties.line.solidFill = colors[i]
+            s.graphicalProperties.line.width = 28000
+            if i == 3:
+                s.graphicalProperties.line.dashStyle = "dash"
+                s.graphicalProperties.line.width = 35000
+            s.marker.symbol = "circle"
+            s.marker.size = 7
 
-    data = Reference(ws, min_col=2, max_col=5, min_row=3, max_row=ws.max_row)
-    cats = Reference(ws, min_col=1, min_row=4, max_row=ws.max_row)
+        ws.add_chart(chart, f"G{data_start_row}")
 
-    chart.add_data(data, titles_from_data=True)
-    chart.set_categories(cats)
-
-    colors = ["1F4E79", "ED7D31", "A5A5A5", "70AD47"]
-    for i, s in enumerate(chart.series):
-        s.graphicalProperties.line.solidFill = colors[i]
-        s.graphicalProperties.line.width = 28000
-        if i == 3:
-            s.graphicalProperties.line.dashStyle = "dash"
-            s.graphicalProperties.line.width = 35000
-        s.marker.symbol = "circle"
-        s.marker.size = 7
-
-    ws.add_chart(chart, "G4")
+        # === Роздільник ===
+        current_row = data_end_row + 5
+        ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=12)
+        sep = ws.cell(current_row, 1)
+        sep.fill = PatternFill("solid", fgColor="1F4E79")
+        ws.row_dimensions[current_row].height = 4
+        current_row += 2
 
     return ws
