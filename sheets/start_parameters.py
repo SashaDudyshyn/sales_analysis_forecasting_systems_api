@@ -12,7 +12,6 @@ def create_sheet_start_parameters(workbook, params):
     headers = params.get("input_headers", [])
     headers_str = ", ".join(headers) if headers else "—"
 
-    # === СПИСОК РЯДКІВ ===
     rows = [
         ["Параметр", "Значення"],
         ["Файл", params["filename"]],
@@ -41,11 +40,9 @@ def create_sheet_start_parameters(workbook, params):
         ["Останній рядок даних (фактори)", params["factor_row_last_data"]],
     ]
 
-    # === ЗАПИСУЄМО ВСІ РЯДКИ СПЕРШУ ===
     for r in rows:
         ws.append(r)
 
-    # === СТИЛІ ТА ФОРМАТУВАННЯ ===
     bold_white = Font(bold=True, color="FFFFFF", size=13)
     bold_blue  = Font(bold=True, color="1F4E79", size=12)
     regular    = Font(size=11)
@@ -67,7 +64,7 @@ def create_sheet_start_parameters(workbook, params):
     ws["A1"].alignment = center_wrap
     ws["B1"].alignment = center_wrap
 
-    # === ОБ'ЄДНАННЯ КЛІТИНОК — РОБИМО ПІСЛЯ ЗАПИСУ ВСІХ ДАНИХ ===
+    # ОБ'ЄДНАННЯ КЛІТИНОК — РОБИМО ПІСЛЯ ЗАПИСУ ВСІХ ДАНИХ
     for row_idx in range(1, ws.max_row + 1):
         cell_a = ws.cell(row_idx, 1)
         if cell_a.value and "Налаштування" in str(cell_a.value):
@@ -103,7 +100,6 @@ def create_sheet_start_parameters(workbook, params):
         else:
             ws.row_dimensions[i].height = 22
 
-    # === АВТОШИРИНА ===
     for col_letter in ("A", "B"):
         max_len = 0
         column = ws[col_letter]
