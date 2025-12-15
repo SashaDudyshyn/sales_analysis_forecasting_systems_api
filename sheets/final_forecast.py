@@ -11,7 +11,7 @@ def create_sheet_final_forecast(workbook, params):
         workbook.remove(workbook[sheet_name])
     ws = workbook.create_sheet(title=sheet_name)
 
-    # === Параметри ===
+    #Параметри
     model_year         = params["model_year"]
     headers            = params["input_headers"]
     trend_forecasts    = params["trend_forecasts"]
@@ -19,7 +19,7 @@ def create_sheet_final_forecast(workbook, params):
     factors_data       = params.get("factors_data", [])
     range_start_col    = params["range_start_col"]
 
-    # === Фактори ===
+    #Фактори
     header_normalized = {h.strip().lower().replace(" ", ""): h for h in headers}
     factors_by_header = {}
     for f in factors_data:
@@ -32,7 +32,7 @@ def create_sheet_final_forecast(workbook, params):
                 "values": f["data"]
             })
 
-    # === Розміри блоків ===
+    # Розміри блоків
     block_sizes_no_sep = []
     for header in headers:
         factors_count = len(factors_by_header.get(header, []))
@@ -44,14 +44,14 @@ def create_sheet_final_forecast(workbook, params):
         if h != headers[-1]:
             total_cols += 1  # роздільник
 
-    # === Динамічні номери рядків ===
+    # Динамічні номери рядків
     HEADER_MAIN_ROW       = 1    # "Фінальний прогноз на 2025 рік"
     EMPTY_ROW             = 2
     REGION_HEADER_ROW     = 3    # Заголовки діапазонів даних
     COLUMN_HEADER_ROW     = 4    # Тренд, З урахуванням сезонності, Фінальний прогноз
     FIRST_DATA_ROW        = 5    # перший місяць (січень)
 
-    # === Головний заголовок ===
+    # Головний заголовок
     ws.cell(HEADER_MAIN_ROW, 1, f"Фінальний прогноз на {model_year} рік")
     ws.merge_cells(start_row=HEADER_MAIN_ROW, start_column=1,
                    end_row=HEADER_MAIN_ROW, end_column=total_cols)
@@ -60,7 +60,7 @@ def create_sheet_final_forecast(workbook, params):
 
     ws.append([])  # порожній рядок
 
-    # === Рядок 3 — назви діапазонів даних (регіонів) ===
+    #Рядок 3 — назви діапазонів даних (регіонів)
     cur_col = 6
     for idx, header in enumerate(headers):
         size = block_sizes_no_sep[idx]
@@ -74,7 +74,7 @@ def create_sheet_final_forecast(workbook, params):
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         cur_col += size + (1 if idx < len(headers)-1 else 0)
 
-    # === Рядок 4 — детальні заголовки ===
+    #  Рядок 4 — детальні заголовки 
     header_row = ["Рік", "Місяць", "Назва місяця", "Номер місяця", ""]
     for header in headers:
         factors = factors_by_header.get(header, [])
@@ -86,7 +86,7 @@ def create_sheet_final_forecast(workbook, params):
             header_row.append("")
     ws.append(header_row)
 
-    # === 12 місяців прогнозу ===
+    # 12 місяців прогнозу
     final_forecast_by_col = {}
     for month_num in range(1, 13):
         row_values = [model_year, month_num, MONTH_NAMES[month_num], month_num, ""]
@@ -113,7 +113,7 @@ def create_sheet_final_forecast(workbook, params):
 
         ws.append(row_values)
 
-    # === Стилі ===
+    # Стилі
     bold   = Font(bold=True)
     center = Alignment(horizontal="center", vertical="center")
     wrap   = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -148,9 +148,8 @@ def create_sheet_final_forecast(workbook, params):
     ws.row_dimensions[REGION_HEADER_ROW].height   = 40
     ws.row_dimensions[COLUMN_HEADER_ROW].height   = 100
 
-    # === АВТОШИРИНА ТІЛЬКИ ПО ДАНИМ (рядки з прогнозами) ===
     data_start_row = FIRST_DATA_ROW
-    data_end_row   = FIRST_DATA_ROW + 11  # 12 місяців
+    data_end_row   = FIRST_DATA_ROW + 11  
 
     column_widths = {}
     for row in ws.iter_rows(min_row=data_start_row, max_row=data_end_row):
