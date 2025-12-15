@@ -37,7 +37,7 @@ def create_combined_visualization_from_columns(
 
         n_hist = len(years)
 
-        # === Заголовок ===
+        #Заголовок
         ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=5)
         title_cell = ws.cell(current_row, 1, f"Динаміка та прогноз: {header_name}")
         title_cell.font = Font(bold=True, size=16, color="1F4E79")
@@ -45,7 +45,7 @@ def create_combined_visualization_from_columns(
         ws.row_dimensions[current_row].height = 45
         current_row += 1
 
-        # === Заголовки таблиці ===
+        # Заголовки таблиці
         headers = ["Період", "Сирі дані", "Згладжені", "Тренд", "Фінальний прогноз"]
         for c, h in enumerate(headers, 1):
             cell = ws.cell(current_row, c, h)
@@ -54,7 +54,7 @@ def create_combined_visualization_from_columns(
             cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         current_row += 1
 
-        # === Дані ===
+        # Дані
         data_start_row = current_row
         for i in range(n_hist):
             period = f"{int(years[i])}-{int(months[i]):02d}"
@@ -72,7 +72,7 @@ def create_combined_visualization_from_columns(
 
         data_end_row = ws.max_row
 
-        # === Автоширина ===
+        # Автоширина
         for col in range(1, 6):
             column = get_column_letter(col)
             max_len = 0
@@ -84,7 +84,7 @@ def create_combined_visualization_from_columns(
             width = max(min(max_len + 2, 25), 10)
             ws.column_dimensions[column].width = width
 
-        # === Графік ===
+        # Графік
         chart = LineChart()
         chart.title = f"Прогноз: {header_name}"
         chart.style = 27
@@ -111,7 +111,7 @@ def create_combined_visualization_from_columns(
 
         ws.add_chart(chart, f"G{data_start_row}")
 
-        # === Роздільник ===
+        #Роздільник
         current_row = data_end_row + 5
         ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=12)
         sep = ws.cell(current_row, 1)
