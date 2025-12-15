@@ -20,7 +20,7 @@ app = FastAPI(title="Прогноз продажів")
 async def process_excel(
     file: UploadFile = File(...),
 
-    # === Статистичні дані ===
+    # Статистичні дані
     column_year: str = Form("B"),
     column_month: str = Form("D"),
     range_data: str = Form("G-J"),
@@ -29,11 +29,11 @@ async def process_excel(
     row_last_data: int = Form(38),
     k: int = Form(2),
 
-    # === Аркуші ===
+    # Аркуші
     sheet_stat: str = Form("Статистичні дані"),
     sheet_factor: str = Form("Фактори впливу"),
 
-    # === Фактори впливу ===
+    # Фактори впливу 
     factor_column_year: str = Form("B"),
     factor_column_month: str = Form("C"),
     factor_row_range_data: str = Form("E-F"),
@@ -50,7 +50,7 @@ async def process_excel(
     content = await file.read()
     workbook = load_workbook(filename=BytesIO(content))
 
-    # === ПОВНА ВАЛІДАЦІЯ ВСІХ ПАРАМЕТРІВ ===
+    # ПОВНА ВАЛІДАЦІЯ ВСІХ ПАРАМЕТРІВ 
     try:
         params = ExcelProcessParams(
             column_year=column_year,
@@ -76,14 +76,13 @@ async def process_excel(
     except ValueError as e:
         raise HTTPException(422, f"Помилка валідації: {e}")
 
-    # Перетворюємо в dict (зручніше передавати)
     params_dict = params.model_dump()
 
-    # === Розрахунок колонок ===
+    #  Розрахунок колонок
     col_start = column_index_from_string(params.range_data.split("-")[0])
     col_end = column_index_from_string(params.range_data.split("-")[1])
 
-    # === Читаємо заголовки з аркуша sheet_stat ===
+    # Читаємо заголовки з аркуша sheet_stat 
     try:
         stat_sheet = workbook[params_dict["sheet_stat"]]
     except KeyError:
@@ -95,17 +94,16 @@ async def process_excel(
         header = str(val).strip() if val else f"Колонка {get_column_letter(c)}"
         correct_headers.append(header)
 
-    # === params_dict ===
     params_dict.update({
         "workbook": workbook,
-        "active_sheet": stat_sheet,           # ← КРИТИЧНО ВАЖЛИВО!
+        "active_sheet": stat_sheet,           
         "range_start_col": col_start,
         "range_end_col": col_end,
         "input_headers": correct_headers,
         "filename": file.filename,
     })
 
-    # === розрахунок року прогнозу ===
+    # розрахунок року прогнозу
     # Беремо останній рік зі статистичних даних і додаємо +1
     last_year = None
     year_col_idx = column_index_from_string(params.column_year)
@@ -130,20 +128,20 @@ async def process_excel(
     model_year = last_year + 1
     params_dict["model_year"] = model_year
 
-    # === 1. Аркуш з параметрами ===
+    # 1. Аркуш з параметрами 
     create_sheet_start_parameters(workbook, params_dict)
 
-    # === 2. Згладжені дані ===
+    # 2. Згладжені дані
     smoothed_result = create_sheet_smoothed_data(workbook, params_dict)
 
-    # === 3. Підготовка до сезонності ===
+    # 3. Підготовка до сезонності 
     final_params = {
         **params_dict,
         "years": smoothed_result["years"],
         "months": smoothed_result["months"],
     }
 
-    # === 4. Виключення сезонності ===
+    # 4. Виключення сезонності 
     create_sheet_seasonality(workbook, final_params, smoothed_result["smoothed_data"])
     seasonality_result = create_sheet_seasonality(workbook, final_params, smoothed_result["smoothed_data"])
     final_params.update({
@@ -152,24 +150,24 @@ async def process_excel(
     })
 
 
-    # === 5. Тренд ===
+    # 5. Тренд
     create_sheet_forecast(workbook, final_params, seasonality_result["deseasoned_data"])
 
-    # === 6. Завантаження факторів впливу ===
+    # 6. Завантаження факторів впливу
     try:
         factors_data = load_factors_data(workbook, params_dict)
         final_params["factors_data"] = factors_data
     except Exception as e:
         raise HTTPException(500, f"Помилка читання факторів впливу: {e}")
 
-    # === 7. Фінальний прогноз ===
+    # 7. Фінальний прогноз 
     forecast_result = create_sheet_forecast(workbook, final_params, seasonality_result["deseasoned_data"])
     final_params["trend_forecasts"] = forecast_result["trend_forecasts"]
 
     final_result = create_sheet_final_forecast(workbook, final_params)
     final_forecast_by_col = final_result["final_forecast_by_col"]
 
-    # === 8. Візуалізація — один аркуш з усіма регіонами ===
+    # 8. Візуалізація — один аркуш з усіма регіонами 
     create_combined_visualization_from_columns(
         workbook=workbook,
         years=smoothed_result["years"],
@@ -183,7 +181,7 @@ async def process_excel(
     )
 
 
-    # === Повертаємо готовий файл ===
+    # Повертаємо готовий файл
     output = BytesIO()
     workbook.save(output)
     output.seek(0)
