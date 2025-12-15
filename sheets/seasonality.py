@@ -15,7 +15,7 @@ def create_sheet_seasonality(workbook, params, smoothed_data):
         workbook.remove(workbook[sheet_name])
     ws = workbook.create_sheet(title=sheet_name)
 
-    # === Параметри ===
+    # Параметри 
     col_start = params["range_start_col"]
     col_end = params["range_end_col"]
     input_headers = params.get("input_headers", [])
@@ -24,7 +24,7 @@ def create_sheet_seasonality(workbook, params, smoothed_data):
     total_months = len(years)
     data_cols = len(input_headers)
 
-    # === 1. Розрахунок сезонних коефіцієнтів ===
+    # Розрахунок сезонних коефіцієнтів
     month_sums = defaultdict(lambda: {c: 0.0 for c in smoothed_data})
     month_counts = defaultdict(lambda: {c: 0 for c in smoothed_data})
 
@@ -69,7 +69,7 @@ def create_sheet_seasonality(workbook, params, smoothed_data):
         for m in range(1, 13):
             normalized[(m, c)] = round(unnormalized[m][c] * N, 4)
 
-    # === Десезоналізація (основний результат!) ===
+    #  Десезоналізація (основний результат) 
     deseasoned_data = {}  # {col_index: [значення по періодах]}
     deseasoned_by_row = {}  # для запису на аркуш
 
@@ -86,7 +86,7 @@ def create_sheet_seasonality(workbook, params, smoothed_data):
                 deseasoned_data[c] = []
             deseasoned_data[c].append(deseasoned_by_row[i][c])
 
-    # === Позиції колонок ===
+    #  Позиції колонок
     smoothed_start = 5
     unnorm_month_start = smoothed_start + data_cols + 2
     unnorm_coeff_start = unnorm_month_start + 1
@@ -94,7 +94,7 @@ def create_sheet_seasonality(workbook, params, smoothed_data):
     norm_coeff_start = norm_month_start + 1
     deseasoned_start = norm_coeff_start + data_cols + 2
 
-    # === Запис заголовків ===
+    #  Запис заголовків
     def add_title(start_col, end_col, text):
         cell = ws.cell(1, start_col, text)
         ws.merge_cells(start_row=1, start_column=start_col, end_row=1, end_column=end_col)
@@ -120,7 +120,7 @@ def create_sheet_seasonality(workbook, params, smoothed_data):
     )
     ws.append(header_row)
 
-    # === Заповнення ===
+    # Заповнення 
     for i in range(total_months):
         row = 4 + i
         m = months[i]
@@ -152,7 +152,7 @@ def create_sheet_seasonality(workbook, params, smoothed_data):
                 ws.cell(row, unnorm_coeff_start + idx, round(unnormalized[mm][c], 4))
                 ws.cell(row, norm_coeff_start + idx, normalized.get((mm, c), 1.0))
 
-    # === Стилі ===
+    # Стилі 
     bold = Font(bold=True)
     center = Alignment(horizontal="center", vertical="center")
     orange = PatternFill("solid", fgColor="FF8C00")
@@ -171,7 +171,6 @@ def create_sheet_seasonality(workbook, params, smoothed_data):
             if isinstance(cell.value, (int, float)):
                 cell.alignment = center
 
-    # === АВТОШИРИНА ===
     for col_letter in ws.column_dimensions:
         max_length = 10
         for cell in ws[col_letter]:
@@ -179,7 +178,7 @@ def create_sheet_seasonality(workbook, params, smoothed_data):
                 max_length = max(max_length, len(str(cell.value)))
         ws.column_dimensions[col_letter].width = min(max_length + 2, 50)
 
-    # === ПОВЕРТАЄМО ДЕСЕЗОНАЛІЗОВАНІ ДАНІ ДЛЯ ПРОГНОЗУ ===
+    #  ПОВЕРТАЄМО ДЕСЕЗОНАЛІЗОВАНІ ДАНІ ДЛЯ ПРОГНОЗУ
     return {
         "deseasoned_data": deseasoned_data,
         "seasonal_coeffs": normalized,
