@@ -2,7 +2,7 @@
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 class ExcelProcessParams(BaseModel):
-    # === Основні дані ===
+    #Основні дані
     column_year: str = Field(default="B", pattern=r"^[A-Z]+$")
     column_month: str = Field(default="D", pattern=r"^[A-Z]+$")
     range_data: str = Field(default="G-J", pattern=r"^[A-Z]+-[A-Z]+$")
@@ -11,11 +11,11 @@ class ExcelProcessParams(BaseModel):
     row_last_data: int = Field(default=38, ge=5, le=5000)
     k: int = Field(default=2, ge=0, le=10)
 
-    # === Аркуші ===
+    #Аркуші
     sheet_stat: str = Field(default="Статистичні дані", min_length=1)
     sheet_factor: str = Field(default="Фактори впливу", min_length=1)
 
-    # === Фактори впливу ===
+    #Фактори впливу
     factor_column_year: str = Field(default="B", pattern=r"^[A-Z]+$")
     factor_column_month: str = Field(default="C", pattern=r"^[A-Z]+$")
     factor_row_range_data: str = Field(default="E-F", pattern=r"^[A-Z]+-[A-Z]+$")
@@ -25,9 +25,7 @@ class ExcelProcessParams(BaseModel):
     factor_row_first_data: int = Field(default=6, ge=2, le=1000)
     factor_row_last_data: int = Field(default=17, ge=6, le=5000)
 
-    # ──────────────────────────────────────────────────────────────
     # Крос-перевірки через field_validator
-    # ──────────────────────────────────────────────────────────────
     @field_validator("range_data", "factor_row_range_data")
     @classmethod
     def range_start_before_end(cls, v: str) -> str:
@@ -57,9 +55,7 @@ class ExcelProcessParams(BaseModel):
             raise ValueError("factor_row_last_data має бути ≥ factor_row_first_data")
         return v
 
-    # ──────────────────────────────────────────────────────────────
     # Перевірка унікальності рядків метаданих факторів
-    # ──────────────────────────────────────────────────────────────
     @model_validator(mode="after")
     def factor_metadata_rows_distinct(self):
         rows = [
@@ -71,9 +67,7 @@ class ExcelProcessParams(BaseModel):
             raise ValueError("Рядки Опис / Тип / Заголовок факторів не можуть збігатися")
         return self
 
-    # ──────────────────────────────────────────────────────────────
     # нормалізація колонок до uppercase
-    # ──────────────────────────────────────────────────────────────
     @model_validator(mode="before")
     @classmethod
     def uppercase_columns(cls, data: dict):
