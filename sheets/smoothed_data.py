@@ -23,7 +23,7 @@ def create_sheet_smoothed_data(workbook, params):
     input_headers = params["input_headers"]
     data_cols = len(input_headers)
 
-    # === Читання сирих даних ===
+    #Читання сирих даних
     raw_data = {c: [] for c in range(col_start, col_end + 1)}
     years = []
     months = []
@@ -40,7 +40,7 @@ def create_sheet_smoothed_data(workbook, params):
             val = row[c - 1].value
             raw_data[c].append(float(val) if val is not None else None)
 
-    # === ЗГЛАДЖУВАННЯ: центроване ковзне середнє з вікном 2k+1 ===
+    #  ЗГЛАДЖУВАННЯ: центроване ковзне середнє з вікном 2k+1
     n = len(years)
     smoothed = {}
 
@@ -68,7 +68,7 @@ def create_sheet_smoothed_data(workbook, params):
             avg = sum(window) / len(window) if window else None
             smoothed[c].append(round(avg, 2) if avg is not None else None)
 
-    # === РОЗМІТКА АРКУША ===
+    #  РОЗМІТКА АРКУША
     block_width = 4 + data_cols  # Рік, Місяць, Назва, Номер + дані
 
     # Лівий блок: ВХІДНІ ДАНІ
@@ -110,7 +110,6 @@ def create_sheet_smoothed_data(workbook, params):
         ] + [smoothed[c][i] for c in range(col_start, col_end + 1)]
         ws.append(row)
 
-    # === СТИЛІ ===
     bold_large = Font(bold=True, size=14)
     bold = Font(bold=True)
     center = Alignment(horizontal="center", vertical="center")
@@ -139,7 +138,6 @@ def create_sheet_smoothed_data(workbook, params):
             if isinstance(cell.value, (int, float)) and cell.value is not None:
                 cell.alignment = center
 
-    # === АВТОШИРИНА ===
     from openpyxl.utils import get_column_letter
 
     for col_idx, col_cells in enumerate(ws.columns, start=1):
